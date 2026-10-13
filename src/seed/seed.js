@@ -1,31 +1,38 @@
 /**
- * Fills the database with the content currently on the website.
+ * Prepares the database.
  *
- *   npm run seed            # creates the owner account; adds news + farms only when those collections are empty
- *   npm run seed -- --force # deletes all news + farms and inserts the seed content again
+ *   npm run seed               # creates the owner account (safe to run anywhere, changes nothing else)
+ *   npm run seed -- --samples  # also adds the sample news + farms, only when those collections are empty
+ *   npm run seed -- --force    # deletes all news + farms and inserts the sample content again
  *
- * Photos in src/seed/images are copied into uploads/ so their URLs work right away.
+ * Sample content is never added without --samples or --force, so running the plain seed
+ * against the live database can never put placeholder stories on the website.
+ * Sample photos in src/seed/images are stored in the database so their URLs work right away.
  */
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { connectDB, disconnectDB } from '../config/db.js'
-import { NEWS_IMAGES_DIR, NEWS_IMAGES_URL, FARM_IMAGES_DIR, FARM_IMAGES_URL } from '../config/uploads.js'
+import { findFile, saveFile } from '../config/storage.js'
 import { User, News, Farm } from '../models/index.js'
 
 const force = process.argv.includes('--force')
+const samples = force || process.argv.includes('--samples')
 const here = path.dirname(fileURLToPath(import.meta.url))
 
 const SEED_USER = { username: 'owner', password: 'maneecaffee123' }
 
-/** Copies seed photos into uploads/<kind>/ and returns a url builder. */
-function copyImages(kind, targetDir, baseUrl) {
+const MIME = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' }
+
+/** Stores the seed photos of one kind in the database (skipping ones already there) and returns a url builder. */
+async function copyImages(kind) {
   const sourceDir = path.join(here, 'images', kind)
   for (const file of fs.readdirSync(sourceDir)) {
-    const target = path.join(targetDir, file)
-    if (!fs.existsSync(target)) fs.copyFileSync(path.join(sourceDir, file), target)
+    const contentType = MIME[path.extname(file).toLowerCase()]
+    if (!contentType || (await findFile(kind, file))) continue
+    await saveFile({ kind, filename: file, contentType, buffer: fs.readFileSync(path.join(sourceDir, file)) })
   }
-  return (file) => `${baseUrl}/${file}`
+  return (file) => `/uploads/${kind}/${file}`
 }
 
 async function seedUsers() {
@@ -449,14 +456,17 @@ async function seedCollection(Model, label, items) {
 
 try {
   await connectDB()
-  const newsUrl = copyImages('news', NEWS_IMAGES_DIR, NEWS_IMAGES_URL)
-  const farmUrl = copyImages('farms', FARM_IMAGES_DIR, FARM_IMAGES_URL)
-
   const owner = await seedUsers()
   console.log(`[seed] owner account ready: ${owner.username} (password "${SEED_USER.password}" on first creation)`)
 
-  await seedCollection(News, 'news', newsItems(newsUrl))
-  await seedCollection(Farm, 'farms', farmItems(farmUrl))
+  if (samples) {
+    const newsUrl = await copyImages('news')
+    const farmUrl = await copyImages('farms')
+    await seedCollection(News, 'news', newsItems(newsUrl))
+    await seedCollection(Farm, 'farms', farmItems(farmUrl))
+  } else {
+    console.log('[seed] sample news + farms skipped (add --samples to load them into an empty database)')
+  }
 
   console.log('[seed] done')
 } catch (err) {

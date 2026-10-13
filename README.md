@@ -8,12 +8,13 @@ It stores the content the website shows: news stories (ຂ່າວ) and coffee 
 ```bash
 npm install
 cp .env.example .env   # fill in MONGODB_URI and JWT_SECRET (the .env in this folder already points at maneecaffee_db)
-npm run seed           # creates the owner account and loads the news + farms currently on the website
+npm run seed           # creates the owner account (safe anywhere; adds no content)
+npm run seed -- --samples  # also loads sample news + farms, only into an empty database
 npm run dev            # http://localhost:4002
 ```
 
 Seed account: `owner / maneecaffee123` (change it with `POST /api/auth/change-password`).
-`npm run seed -- --force` wipes news + farms and loads the seed content again.
+`npm run seed -- --force` wipes news + farms and loads the sample content again. The plain `npm run seed` never touches content, so it is safe to run against the live database.
 
 The database is `maneecaffee_db` on the same Atlas cluster as TalaSale. MongoDB creates it on the first write (the seed), so it only appears in Atlas after `npm run seed`.
 
@@ -27,7 +28,7 @@ All routes are under `/api`. Reading news and farms is public (the website calls
 | Auth | `POST /auth/login` (`username`, `password`) → `{ token, user }`; `POST /auth/register`; `GET /auth/register/status`; `GET /auth/me`; `POST /auth/change-password` |
 | News | `GET /news?category=&featured=true&page=&limit=` → `{ items, total, page, limit, categories }` (featured first, then newest); `GET /news/categories`; `GET /news/featured` (the story in the big card at the top of the news page, newest story when none is flagged); `GET /news/:slug` (slug or id); `POST /news`; `PUT /news/:id`; `PATCH /news/:id/feature` (make it the featured story); `DELETE /news/:id` (owner) |
 | Farms | `GET /farms` → `{ items, total }` (by `sortOrder`); `GET /farms/:slug` (slug or id); `POST /farms`; `PUT /farms/:id` (nested `facts`, `story`, `quote`, `product` are merged field by field); `DELETE /farms/:id` (owner) |
-| Uploads | `POST /uploads/news` and `POST /uploads/farms` (multipart field `image`, JPG/PNG/WEBP/GIF up to 5MB) → `{ url }`; files are served publicly under `/uploads/...` and stored in `uploads/` (git-ignored) |
+| Uploads | `POST /uploads/news` and `POST /uploads/farms` (multipart field `image`, JPG/PNG/WEBP/GIF up to 5MB) → `{ url }`; photos are stored **in MongoDB** (GridFS bucket `uploads`) and served publicly at `/uploads/<kind>/<file>`, so they survive redeploys and are shared between every copy of the API that uses the same database. The local `uploads/` folder is only a fallback for old files; `npm run migrate-uploads` copies anything still in it into the database |
 
 Logged-in users can add `?includeUnpublished=true` to the news and farm list/detail routes to see drafts (`published: false`).
 
@@ -76,5 +77,6 @@ src/
   routes/            one file per area + index.js; zod schemas validate request bodies
   middleware/        auth (JWT), error handler, image upload (multer)
   utils/             ApiError, validate, pagination, slug
-  seed/              seed.js + images/ (photos copied into uploads/ on seed)
+  seed/              seed.js + images/ (seed photos stored in the database), migrate-uploads.js
+  config/storage.js  photo storage in MongoDB (GridFS) + the /uploads/:kind/:name handler
 ```

@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "seed": "node src/seed/seed.js"
+    "seed": "node src/seed/seed.js",
+    "migrate-uploads": "node src/seed/migrate-uploads.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
