@@ -21,6 +21,11 @@ const newsSchema = new mongoose.Schema(
     summary: { type: String, trim: true, default: '' },
     location: { type: String, trim: true, default: '' }, // where the activity took place
     body: { type: [String], default: [] }, // one entry per paragraph
+    // optional English version (the website shows it when the visitor chooses English)
+    titleEn: { type: String, trim: true, default: '' },
+    summaryEn: { type: String, trim: true, default: '' },
+    bodyEn: { type: [String], default: [] },
+    locationEn: { type: String, trim: true, default: '' },
     images: { type: [photoSchema], default: [] }, // first one shows on the card, all of them on the story page
     imageLabel: { type: String, trim: true, default: 'ຮູບພາບຂ່າວ' }, // placeholder text while there is no photo
     featured: { type: Boolean, default: false }, // the big card at the top of the news page (only one at a time)

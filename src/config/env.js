@@ -20,4 +20,7 @@ export const env = {
   // Secure default: self-registration is closed unless explicitly enabled.
   // The very first user can always register (initial setup), and owners can always create accounts.
   allowPublicRegistration: process.env.ALLOW_PUBLIC_REGISTRATION === 'true',
+  // Optional: Google Cloud Translation API key for the dashboard's translate button
+  // (without it a keyless public endpoint is used, best effort).
+  googleTranslateKey: process.env.GOOGLE_TRANSLATE_API_KEY || '',
 }

@@ -28,6 +28,7 @@ All routes are under `/api`. Reading news and farms is public (the website calls
 | Auth | `POST /auth/login` (`username`, `password`) → `{ token, user }`; `POST /auth/register`; `GET /auth/register/status`; `GET /auth/me`; `POST /auth/change-password` |
 | News | `GET /news?category=&featured=true&page=&limit=` → `{ items, total, page, limit, categories }` (featured first, then newest); `GET /news/categories`; `GET /news/featured` (the story in the big card at the top of the news page, newest story when none is flagged); `GET /news/:slug` (slug or id); `POST /news`; `PUT /news/:id`; `PATCH /news/:id/feature` (make it the featured story); `DELETE /news/:id` (owner) |
 | Farms | `GET /farms` → `{ items, total }` (by `sortOrder`); `GET /farms/:slug` (slug or id); `POST /farms`; `PUT /farms/:id` (nested `facts`, `story`, `quote`, `product` are merged field by field); `DELETE /farms/:id` (owner) |
+| Translate | `POST /translate` (`texts: string[]`, `from` lo, `to` en) → `{ texts }`: machine translation for the dashboard's "ແປເປັນພາສາອັງກິດ" button. Uses the Google Cloud Translation API when `GOOGLE_TRANSLATE_API_KEY` is set, otherwise Google's keyless public endpoint (best effort). 30 requests per minute per IP. |
 | Uploads | `POST /uploads/news` and `POST /uploads/farms` (multipart field `image`, JPG/PNG/WEBP/GIF up to 5MB) → `{ url }`; photos are stored **in MongoDB** (GridFS bucket `uploads`) and served publicly at `/uploads/<kind>/<file>`, so they survive redeploys and are shared between every copy of the API that uses the same database. The local `uploads/` folder is only a fallback for old files; `npm run migrate-uploads` copies anything still in it into the database |
 
 Logged-in users can add `?includeUnpublished=true` to the news and farm list/detail routes to see drafts (`published: false`).
@@ -40,6 +41,7 @@ Logged-in users can add `?includeUnpublished=true` to the news and farm list/det
   "title": "Manee Coffee Roasters ມອບ...",
   "summary": "2–3 ແຖວ",
   "location": "ບ້ານ, ເມືອງ, ແຂວງ",
+  "titleEn": "Optional English title", "summaryEn": "...", "bodyEn": ["..."], "locationEn": "...",
   "body": ["ຫຍໍ້ໜ້າ 1", "ຫຍໍ້ໜ້າ 2"],
   "images": [{ "url": "/uploads/news/....jpg", "alt": "...", "position": "center 30%" }],
   "featured": true,

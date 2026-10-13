@@ -4,6 +4,7 @@ import authRoutes from './auth.routes.js'
 import newsRoutes from './news.routes.js'
 import farmsRoutes from './farms.routes.js'
 import uploadsRoutes from './uploads.routes.js'
+import translateRoutes from './translate.routes.js'
 
 const router = Router()
 
@@ -17,7 +18,8 @@ router.use('/auth', authRoutes)
 router.use('/news', newsRoutes)
 router.use('/farms', farmsRoutes)
 
-// Image uploads always need a logged-in user.
+// Image uploads and machine translation always need a logged-in user.
 router.use('/uploads', requireAuth, uploadsRoutes)
+router.use('/translate', requireAuth, translateRoutes)
 
 export default router
